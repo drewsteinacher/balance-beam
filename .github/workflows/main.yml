@@ -16,7 +16,7 @@ jobs:
         dotnet-version: 8.0
 
     - name: Publish .NET Core Project
-      run: dotnet publish BalanceBeamApp.csproj -c Release -o release --nologo
+      run: dotnet publish BalanceBeamApp/BalanceBeamApp.csproj -c Release -o release --nologo
 
     - name: Change base-tag in index.html from / to repo name
       run: sed -i 's/<base href="\/" \/>/<base href="\/BalanceBeamApp\/" \/>/g' release/wwwroot/index.html
