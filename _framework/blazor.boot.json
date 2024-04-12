@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "BalanceBeamApp",
   "resources": {
-    "hash": "sha256-Pu7h4Qo0WwylwwBW6FvJyH6LEi2vN1A2XG5oFoDiLtY=",
+    "hash": "sha256-Y7VgNaPK+mDQehZOEBaTJD+UqxmrqTTC4aj5dEfIjw4=",
     "jsModuleNative": {
       "dotnet.native.8.0.4.6vlmefabfv.js": "sha256-ju0+XWE0ihz554eKEj0HQ8Opa61xpbUIaX5/MNo8we4="
     },
@@ -17,7 +17,7 @@
       "icudt_no_CJK.dat": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs="
     },
     "assembly": {
-      "BalanceBeamApp.wasm": "sha256-6bFvW7UJBAj6Vvny5Yg+cjvQ9e6yTNyFVLdZ1JuK2SE=",
+      "BalanceBeamApp.wasm": "sha256-NPiKfu0O3wbDbIbQ1v3RvA81B+cnqonPf3Xa0QFwBPs=",
       "Microsoft.AspNetCore.Components.wasm": "sha256-4cf7q0QIuih0cVZzT3WDtPUR/bINebQq8KQgQ81vEaw=",
       "Microsoft.AspNetCore.Components.Web.wasm": "sha256-AJrpIWzNwCdksDByGDWBCnoNGa9TDk+P97lxr41mDpM=",
       "Microsoft.AspNetCore.Components.WebAssembly.wasm": "sha256-mwwNz/IMHU35BqhBaez63Z01g22S/iPHUXLcAMuyQL4=",
