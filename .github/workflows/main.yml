@@ -22,7 +22,7 @@ jobs:
       run: dotnet publish BalanceBeamApp/BalanceBeamApp.csproj -c Release -o release --nologo
 
     - name: Change base-tag in index.html from / to repo name
-      run: sed -i 's/<base href="\/" \/>/<base href="\/BalanceBeamApp\/" \/>/g' release/wwwroot/index.html
+      run: sed -i 's/<base href="\/" \/>/<base href="\/balance-beam\/" \/>/g' release/wwwroot/index.html
     
     - name: Copy index.html to 404.html
       run: cp release/wwwroot/index.html release/wwwroot/404.html
