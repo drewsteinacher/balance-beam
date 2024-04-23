@@ -89,6 +89,7 @@ a, .btn-link {
         }
 
 .loading-progress-text {
+    color: white;
     position: absolute;
     text-align: center;
     font-weight: bold;
