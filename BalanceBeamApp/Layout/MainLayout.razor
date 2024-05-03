@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @using BalanceBeamApp.Pages
 
-<MudThemeProvider/>
+<MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
@@ -14,18 +14,18 @@
     <MudMainContent>
         <MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.False">
             <MudGrid>
-                <MudItem xs="12" sm="6" md="4">
-                    <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                        <Transactions />
+                <MudItem xs="12" sm="12" md="12" lg="12">
+                    <MudPaper Elevation="2" Class="pa-4">
+                        <TransactionsArea />
                     </MudPaper>
                 </MudItem>
-                <MudItem xs="12" sm="6" md="4">
-                    <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudItem xs="12" sm="12" md="12">
+                    <MudPaper Elevation="2" Class="pa-4">
                         BBB
                     </MudPaper>
                 </MudItem>
-                <MudItem xs="12" sm="12" md="4">
-                    <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudItem xs="12" sm="12" md="12">
+                    <MudPaper Elevation="2" Class="pa-4">
                         CCC
                     </MudPaper>
                 </MudItem>

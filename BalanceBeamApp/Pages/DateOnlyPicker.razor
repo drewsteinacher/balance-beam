@@ -1,0 +1,64 @@
+@using System.Linq.Expressions
+@using System.Reflection
+
+<MudDatePicker @ref="datePickerRef" Label="@Label" Class="d-inline-flex" ReadOnly="@ReadOnly" HelperText="@HelperText" @bind-Date="dateBindTarget" />
+
+@*HACK: This component works as an adapter between MudDatePicker (which only accepts DateTime?) and any DateOnly? object.
+Remove once issue https://github.com/MudBlazor/MudBlazor/issues/6178 is fixed*@
+
+@code
+{
+	[CascadingParameter]
+	public EditContext? EditContext { get; set; }
+
+	[Parameter, EditorRequired]
+	public DateOnly? Date { get; set; }
+
+	[Parameter]
+	public EventCallback<DateOnly?> DateChanged { get; set; }
+
+	[Parameter, EditorRequired]
+	public string? Label { get; set; }
+
+	[Parameter]
+	public Expression<Func<DateOnly>>? For { get; set; }
+
+	[Parameter]
+	public bool ReadOnly { get; set; }
+
+	[Parameter]
+	public string? HelperText { get; set; }
+
+	private MudDatePicker? datePickerRef;
+
+	private DateTime? dateBindTarget
+	{
+		get => Date?.ToDateTime(TimeOnly.MinValue);
+		set
+		{
+			if (value is not null)
+			{
+				Date = DateOnly.FromDateTime((DateTime)value);
+				DateChanged.InvokeAsync(Date);
+			}
+		}
+	}
+
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if (!firstRender || For is null)
+			return;
+
+		if (EditContext is null)
+			throw new Exception("Using 'For' without an 'EditContext' is not supported. Are you missing an 'EditForm'?");
+
+		// Get the private field _fieldidentifier by reflection.
+		FieldInfo? fieldIdentifierField = typeof(MudFormComponent<DateTime?, string>).GetField("_fieldIdentifier", BindingFlags.Instance | BindingFlags.NonPublic);
+
+		if (fieldIdentifierField is not null)
+		{
+			// Set the field identifier with our DateOnly? expression, avoiding the type issue between DateOnly vs DateTime
+			fieldIdentifierField.SetValue(datePickerRef, FieldIdentifier.Create(For));
+		}
+	}
+}

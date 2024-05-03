@@ -1,0 +1,220 @@
+@using System.Net.Http.Json
+@using System.Reflection
+@using MudBlazor
+@using BalanceBeamApp.Models
+@using BalanceBeamApp.Pages
+@using BalanceBeamApp.Helpers
+@using System.Collections.Generic
+@inject HttpClient httpClient
+@inject ISnackbar Snackbar
+
+<MudTable
+    Items="@Transactions"
+    Dense="true"
+    Hover="true"
+    CanCancelEdit="true"
+    @bind-SelectedItem="selectedItem"
+    SortLabel="Sort By"
+    CommitEditTooltip="Commit Edit"
+    OnCommitEditClick="@(() => Snackbar.Add("Commit Edit Handler Invoked"))"
+    RowEditPreview="BackupItem"
+    RowEditCancel="ResetItemToOriginalValues"
+    RowEditCommit="ItemHasBeenCommitted"
+    IsEditRowSwitchingBlocked="true"
+    ApplyButtonPosition="@applyButtonPosition"
+    EditButtonPosition="@editButtonPosition"
+    EditTrigger="@editTrigger">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Transactions</MudText>
+    </ToolBarContent>
+    <ColGroup>
+        @if (applyButtonPosition.DisplayApplyButtonAtStart() || (editButtonPosition.DisplayEditButtonAtStart() && editTrigger == TableEditTrigger.EditButton))
+        {
+            <col style="width:50px;" />
+        }
+        <col />
+        <col />
+        <col />
+        <col />
+        @if (applyButtonPosition.DisplayApplyButtonAtEnd() || (editButtonPosition.DisplayEditButtonAtEnd() && editTrigger == TableEditTrigger.EditButton))
+        {
+            <col style="width:50px;" />
+        }
+    </ColGroup>
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortBy="new Func<Transaction, object>(x=>x.Icon)">Icon</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Transaction, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Transaction, object>(x=>x.Amount)">Amount</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Transaction, object>(x=>x.StartDate)">StartDate</MudTableSortLabel></MudTh>
+        @* <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<Element, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Transaction, object>(x=>x.Position)">Position</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Transaction, object>(x=>x.Molar)">Mass</MudTableSortLabel></MudTh> *@
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Icon">
+            <MudIcon Icon="@LookupIcon(context?.Icon)"/>
+        </MudTd>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Amount">@context.Amount.ToString("C2")</MudTd>
+        <MudTd DataLabel="StartDate">@context.StartDate</MudTd>
+    </RowTemplate>
+    <RowEditingTemplate>
+        <MudTd DataLabel="Icon">
+            @* <MudTextField @bind-Value="@context.Icon" Required /> *@
+            <MudAutocomplete
+                T="string"
+                Label="MudBlazor Icons"
+                @bind-Value="@context.Icon"
+                SearchFunc="@FindIcon"
+                ResetValueOnEmptyText="true"
+                CoerceText="true"
+                CoerceValue="false"
+                Adornment="Adornment.Start"
+                AdornmentIcon="@LookupIcon(context.Icon)"
+                MaxItems="30">
+                <ItemTemplate Context="e">                          
+                    <MudText>
+                        <MudIcon Icon="@LookupIcon(e)" Class="mb-n1 mr-3"/>@($"{e.Split(".").Last()}")
+                    </MudText>
+                </ItemTemplate>
+                @* <ItemSelectedTemplate Context="e">                
+                <MudText>
+                    <MudIcon Icon="@Icons.Material.Filled.CheckBox" Class="mb-n1 mr-3"/>@($"{e} ({e})")
+                </MudText>
+            </ItemSelectedTemplate> *@
+            </MudAutocomplete>
+        </MudTd>
+        <MudTd DataLabel="Name">
+            <MudTextField @bind-Value="@context.Name" Required />
+        </MudTd>
+        <MudTd DataLabel="Amount">
+            <MudNumericField @bind-Value="@context.Amount" Required  HideSpinButtons="true" Format="F2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AttachMoney"/>
+        </MudTd>
+        <MudTd DataLabel="StartDate">
+            <DateOnlyPicker @bind-Date="@context.StartDate" Label="StartDate" />
+        </MudTd>
+    </RowEditingTemplate>
+    <EditButtonContent Context="button">
+        <MudIconButton
+            Size="@Size.Small"
+            Icon="@Icons.Material.Outlined.Edit"
+            Class="pa-0"
+            OnClick="@button.ButtonAction"
+            Disabled="@button.ButtonDisabled"
+        />
+    </EditButtonContent>
+</MudTable>
+
+@code {
+    private IEnumerable<Transaction> Transactions = new List<Transaction>();
+    private Transaction? selectedItem;
+    private Transaction? elementBeforeEdit;
+    private TableApplyButtonPosition applyButtonPosition = TableApplyButtonPosition.Start;
+    private TableEditButtonPosition editButtonPosition = TableEditButtonPosition.Start;
+    private TableEditTrigger editTrigger = TableEditTrigger.EditButton;
+    private List<string> editEvents = new();
+
+    private static IDictionary<string, string> MudBlazorIconToValue
+        = typeof(Icons.Material)
+            .GetNestedTypes()
+            .SelectMany(t => {
+                return t
+                    .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+                    .Where(field => field.IsLiteral && !field.IsInitOnly)
+                    .Select(field => {
+                        var shortIconName = t.Name + "." + field.Name;
+                        var iconValue = field.GetRawConstantValue() ?? Icons.Material.Outlined.QuestionMark;
+                        return new KeyValuePair<string, string>(shortIconName, (string)iconValue);
+                    });
+            })
+            .Where(pair => !pair.Key.Contains('_'))
+            .ToDictionary();
+
+    private static ICollection<string> CommonMudBlazorIcons = new List<string> {
+            FullName.Of(Icons.Material.TwoTone.AttachMoney),
+            FullName.Of(Icons.Material.TwoTone.CreditCard),
+            FullName.Of(Icons.Material.TwoTone.EmojiFoodBeverage),
+            FullName.Of(Icons.Material.TwoTone.Smartphone),
+            FullName.Of(Icons.Material.TwoTone.ElectricalServices),
+            FullName.Of(Icons.Material.TwoTone.GasMeter),
+            FullName.Of(Icons.Material.TwoTone.LocalGasStation),
+            FullName.Of(Icons.Material.TwoTone.LocalGroceryStore),
+            FullName.Of(Icons.Material.TwoTone.House),
+            FullName.Of(Icons.Material.TwoTone.Mail),
+            FullName.Of(Icons.Material.TwoTone.ShoppingCart),
+            FullName.Of(Icons.Material.TwoTone.ShoppingBag),
+            FullName.Of(Icons.Material.TwoTone.ShoppingBasket),
+            FullName.Of(Icons.Material.TwoTone.Store),
+            FullName.Of(Icons.Material.TwoTone.Storefront),
+            FullName.Of(Icons.Material.TwoTone.StoreMallDirectory),
+            FullName.Of(Icons.Material.TwoTone.GpsFixed),
+            FullName.Of(Icons.Material.TwoTone.Hotel),
+            FullName.Of(Icons.Material.TwoTone.AirplaneTicket),
+            FullName.Of(Icons.Material.TwoTone.Chair),
+            FullName.Of(Icons.Material.TwoTone.LocalShipping),
+            FullName.Of(Icons.Material.TwoTone.Pets),
+            FullName.Of(Icons.Material.TwoTone.ExpandLess),
+            FullName.Of(Icons.Material.TwoTone.ExpandMore),
+            FullName.Of(Icons.Material.TwoTone.BusinessCenter),
+        };
+
+    private string LookupIcon(string? iconNameIn) {
+        if (iconNameIn is null) {
+            return Icons.Material.Outlined.DoNotDisturb;
+        }
+        var iconName = iconNameIn.Replace("Icons.Material.", string.Empty);
+        return MudBlazorIconToValue.TryGetValue(iconName, out var icon)
+            ? icon
+            : Icons.Material.Outlined.DeviceUnknown;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        Transactions = new [] {
+            new Transaction { Name = "ABC", Amount = 5.51m, Icon = FullName.Of(Icons.Material.Filled.Earbuds), },
+            new Transaction { Name = "def", Amount = 90m, Icon = FullName.Of(Icons.Material.Filled.Pets), },
+            new Transaction { Name = "ghi", Amount = 0.01m },
+        };
+    }
+
+    private async Task<IEnumerable<string>> FindIcon(string value) {
+        if (string.IsNullOrEmpty(value)) {
+            return CommonMudBlazorIcons;
+        }
+        
+        // TODO: This is awfully slow for larger numbers of icons... how to speed up?
+        return MudBlazorIconToValue.Keys
+            .Where(icon => icon.Split(".").Last().Contains(value, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private void AddEditionEvent(string message)
+    {
+        editEvents.Add(message);
+        StateHasChanged();
+    }
+
+    private void BackupItem(object element)
+    {
+        @* elementBeforeEdit = new()
+            {
+                Sign = ((Element)element).Sign,
+                Name = ((Element)element).Name,
+                Molar = ((Element)element).Molar,
+                Position = ((Element)element).Position
+            }; *@
+        @* AddEditionEvent($"RowEditPreview event: made a backup of Element {((Element)element).Name}"); *@
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+        @* AddEditionEvent($"RowEditCommit event: Changes to Element {((Element)element).Name} committed"); *@
+    }
+
+    private void ResetItemToOriginalValues(object element)
+    {
+        @* ((Element)element).Sign = elementBeforeEdit.Sign;
+        ((Element)element).Name = elementBeforeEdit.Name;
+        ((Element)element).Molar = elementBeforeEdit.Molar;
+        ((Element)element).Position = elementBeforeEdit.Position;
+        AddEditionEvent($"RowEditCancel event: Editing of Element {((Element)element).Name} canceled"); *@
+    }
+}
